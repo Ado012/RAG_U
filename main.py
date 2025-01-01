@@ -12,6 +12,9 @@ import re
 import regex
 from bs4.element import Comment
 
+import google.generativeai as genai
+import time
+
 def tag_visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
         return False
@@ -138,7 +141,12 @@ def WebsiteDownloader(target, outputfile): #download websites
         if (result == False):
             continue
 
-        response = requests.get(link, headers=hdr)
+        try:
+            response = requests.get(link, headers=hdr, timeout=5)
+        except requests.exceptions.Timeout:
+            print(link + " " +"Request timed out.")
+            continue
+
         html = response.text
 
         soup = bs4.BeautifulSoup(html, "html.parser") #read in home
@@ -189,21 +197,24 @@ def WebsiteDownloader(target, outputfile): #download websites
     tokenizedtext = tokenizer(scrapedtext2)
     tokensInOutput = len(tokenizer(scrapedtext2))
 
-    if (tokensInOutput > 30000): #token limit is set below mistralite's inherent limit for safety buffer.
-        scrapedtext2 = " ".join(tokenizedtext[:30000])
+    if (tokensInOutput > 300000): #token limit is set to prevent too much downloading. May remove later
+        scrapedtext2 = " ".join(tokenizedtext[:300000])
 
+    current_dir = os.getcwd() #fetch data file
+    subfolder_path = os.path.join(current_dir, "rawfiles")
 
+    data_path = os.path.join(subfolder_path, outputfile)
 
-    fileExists = os.path.isfile(outputfile) #write website output file
+    fileExists = os.path.isfile(data_path) #write website output file
 
     if (fileExists == False):
 
-        with open(outputfile, "w") as file:
+        with open(data_path, "w") as file:
 
             file.write(scrapedtext2)
 
     else:
-        with open(outputfile, "a") as file:
+        with open(data_path, "a") as file:
 
             file.write(scrapedtext2)
 
@@ -223,16 +234,21 @@ def DocumentReader(datafile, outputfile): #read in html files and convert them t
     for paragraph in paragraphs:
         all_text += paragraph.get_text().strip() + " "
 
-    fileExists = os.path.isfile()
+    current_dir = os.getcwd()
+    subfolder_path = os.path.join(current_dir, "datafiles")
+
+    data_path = os.path.join(subfolder_path, outputfile)
+
+    fileExists = os.path.isfile(data_path)
 
     if (fileExists == False):
 
-        with open(outputfile, "w") as file:
+        with open(data_path, "w") as file:
 
             file.write(all_text)
 
     else:
-        with open(outputfile, "a") as file:
+        with open(data_path, "a") as file:
 
             file.write(all_text)
 
@@ -240,18 +256,56 @@ def DocumentReader(datafile, outputfile): #read in html files and convert them t
     print(all_text)
 
 
-def Summarizer(data, targetName, summaryFile, llm): #Use LLM to summarize data from website
 
-    skipSummary = 0 #flag to see if website file exists
+def DataChecker(data): #checks before preparing data for LLM
+
+    skipSummary = 0
+
+    #current_dir = os.getcwd()
+    #subfolder_path = os.path.join(current_dir, "datafiles")
+
+    #data_path = os.path.join(subfolder_path, data)
+
+
+    try:
+        with open(data) as f:  # exception does not seen to work. Look into this later.
+            rawdata = f.read()
+            if os.stat(data).st_size == 0:  # if file is empty
+                skipSummary = 1
+    except FileNotFoundError: #if file does not exist
+        print("File not Found")
+        skipSummary = 1
+
+    skipSummaryStr = str(skipSummary)
+    print(data+" "+skipSummaryStr)
+
+    return skipSummary #returns value stating if data is good or not
+
+
+
+
+
+
+def DataChunker(data, prompt, chunkSize): # prepares data to feed into LLM in managable chunks
+
+    textandpromptList = []
+    skipChunking = 0
+
+    #current_dir = os.getcwd()
+    #subfolder_path = os.path.join(current_dir, "datafiles")
+
+    #data_path = os.path.join(subfolder_path, data)
+
+    fileExists = os.path.isfile(data)  # write website output file
 
     with open(data) as f:
         try:
             rawdata = f.read()
         except FileNotFoundError:
             output = "File not Found"
-            skipSummary = 1
+            skipChunking = 1
 
-    if skipSummary == 0:
+    if skipChunking == 0:
         #make sure output does not exceed prompt limit.
         tokenizer = nltk.word_tokenize #nltk appears to be a generic tokenizer so it may not be the most accurate count to determine prompt limits depending on what model is used but is still better than nothing for now.
         tokenizedtext = tokenizer(rawdata)
@@ -259,7 +313,7 @@ def Summarizer(data, targetName, summaryFile, llm): #Use LLM to summarize data f
 
         #iterate through website output in chunks
         beginPart = 0
-        endPart = 5000
+        endPart = chunkSize
         leaveTextPartitioningLoop = 0
 
         while (beginPart <= tokensInOutput):
@@ -270,47 +324,66 @@ def Summarizer(data, targetName, summaryFile, llm): #Use LLM to summarize data f
 
             #summarize chunk
             textPart = " ".join(tokenizedtext[beginPart:endPart])
-            textandprompt = "Summarize the following biotech company website text: " + textPart
+            textandprompt = prompt + textPart
 
-            messages = [
-                {"role": "system",
-                 "content": "I am a website summarizer. What website text do you wish me to summarize?"},
-                {"role": "user", "content": textandprompt},
-            ]
+            textandpromptList.append(textandprompt)
 
-            response = llm.create_chat_completion(messages=messages)
-
-            responsetext = response['choices'][0]['message']['content']
-
-            print(responsetext)
-
-            #write to file
-            fileExists = os.path.isfile(summaryFile)
-
-            if (fileExists == False):
-
-                with open(summaryFile, "w") as file:
-                    output = targetName + "\n" + responsetext + "\n"
-                    file.write(output)
-
-            else:
-                with open(summaryFile, "a") as file:
-                    output = "\n" + targetName + "\n" + responsetext + "\n"
-                    file.write(output)
+            beginPart = beginPart + chunkSize
+            endPart = endPart + chunkSize
 
             if leaveTextPartitioningLoop == 1:
                 break
 
-            beginPart = beginPart + 5000
-            endPart = endPart + 5000
+    return textandpromptList
 
-    if skipSummary == 1:
+
+
+
+def Summarizer(textandpromptChunk, summaryFile, llm, backgroundPrompt, summarizationEngine): #Use LLM to summarize data from website
+
+    if summarizationEngine == "local":
+        messages = [
+            {"role": "system",
+             "content": backgroundPrompt},
+            {"role": "user", "content": textandpromptChunk},
+        ]
+
+        response = llm.create_chat_completion(messages=messages)
+
+
+        responsetext = response['choices'][0]['message']['content']
+
+    elif summarizationEngine == "remote":
+        responsetext = model.generate_content(textandpromptChunk)
+
+
+    print(responsetext)
+
+    #fetch
+    fileExists = os.path.isfile(summaryFile)
+
+    if (fileExists == False):
+
         with open(summaryFile, "w") as file:
-            output = targetName + "\n" + output + "\n"
+            output = "<<" + ">>" + "\n" + responsetext + "\n"
+            file.write(output)
+
+    else:
+        with open(summaryFile, "a") as file:
+            output = "\n" + "<<" + ">>" + "\n" + responsetext + "\n"
             file.write(output)
 
 
 
+def RemotePause(remoteRequest, remoteQuota): #Use LLM to summarize data from website
+
+    if summarizationEngine == "remote":  # remote llms sometimes impose limits on requests per minute
+        remoteRequest = remoteRequest + 1
+        if remoteRequest >= remoteQuota:
+            time.sleep(60)
+            remoteRequest = 0
+
+    remoteRequest
 
 
 
@@ -318,44 +391,143 @@ def Summarizer(data, targetName, summaryFile, llm): #Use LLM to summarize data f
 #targetList = sys.argv[0] #get website list from command line input
 
 
+prompt = "Summarize the following biotech company website text: "
+backgroundPrompt = "I am a website summarizer. What website text do you wish me to summarize?"
+modelpathParam = "/home/sampleuser/llamamodel/llama-3.1-8b-instruct.Q4_K.gguf"
+chatformatParam = "llama-3"
+summarizationEngine = "local"
+chunkSize = 5000
+remoteQuota = 10
+fragmentationLimit = 10
 
-with open("URLinput.txt") as f:
-    websitestocrawl = f.read()
 
-targetList = websitestocrawl.splitlines()
+
+#modelpathParam = "/home/sampleuser/MistralLite/mistrallite.Q6_K.gguf"
+#chatformatParam = "mistrallite"
+
+with open("EntriesInput.txt") as f: #open up website/document list
+    entriestocrawl = f.read()
+
+entryList = entriestocrawl.splitlines() #split it into a readable format
 
 
 llm = Llama(
-      model_path="/home/llama.cpp/models/MistralLite/mistrallite.Q6_K.gguf",
-      chat_format="mistrallite",
+      model_path= modelpathParam,
+      chat_format= chatformatParam,
       n_gpu_layers=-1, # Uncomment to use GPU acceleration
-      n_ctx=31000  # Uncomment to increase the context window
+      n_ctx=15000  # Uncomment to increase the context window
 )
 
-summaryFile = "summarizedWebsites.txt"
+if summarizationEngine == "remote": #load up remote llm if necessary
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
 
-for targetURL in targetList:
-    if (('www.' in  targetURL) == False):
-        targetURL = targetURL[:8] + 'www.' + targetURL[8:]
-    targetURLparts = targetURL.split(".")
-    targetName = targetURLparts[1]
-    outputFile = targetName + ".txt"
-    #targetFolder = targetName + ".com"
-    WebsiteDownloader(targetURL, outputFile) #download url
+
+
+summaryFile = "summarizedWebsites.txt" #prepare output file
+
+
+#regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+
+
+for entry in entryList: #download list of websites
+    entryParts = entry.split(".")
+    if ('com' in entryParts or 'edu' in entryParts or 'net' in entryParts or 'www' in entryParts )
+        
+        domain_values = ['com', 'net', 'edu']
+
+        indices = [i for i, x in enumerate(entryParts) if x in domain_values]
+ 
+        entryFile = entryParts[1] + ".txt"
+        targetFolder = "www." + entryParts[1] + "." + entryParts[indices[0]]
+        
+        
+        WebsiteDownloader(entry, entryFile) #download url
+
+
+
+current_dir = os.getcwd()  # fetch data files
+subfolder_path = os.path.join(current_dir, "datafiles")
 
 
     #fileList = os.listdir(targetFolder)
-for targetURL in targetList:
-    if (('www.' in targetURL) == False):
-        targetURL = targetURL[:8] + 'www.' + targetURL[8:]
-    targetURLparts = targetURL.split(".")
-    targetName = targetURLparts[1]
-    outputFile = targetName + ".txt"
-    Summarizer(outputFile, targetName, summaryFile, llm)
+remoteRequest = 0 #keep track of remote requests to not time out
+
+for name in os.listdir(subfolder_path): #run summarization engine on list of output files
 
 
 
+
+    entryfilepath = os.path.join(subfolder_path, name)
+    root_ext = os.path.splitext(name)
+    extensionname = root_ext[1]
+    extensionname = extensionname[1:]
+    entryResultsFile = root_ext[0] + extensionname + ".txt" #creates file name to hold results of summarization of the file.
+
+    dataExists = DataChecker(entryfilepath) #check if data is good
+    if (dataExists==0): #if it is
+        entryDataList=DataChunker(entryfilepath, prompt, chunkSize) #chunk data into portions the system can handle
+        for entryData in entryDataList: #run summarizer on chunked datafile
+            Summarizer(entryData, entryResultsFile, llm, backgroundPrompt, summarizationEngine) #run summary
+            remoteRequest = (remoteRequest, remoteQuota)
+
+            #condense summary so model can take all of website into account.
+            summaryChunks = len(entryDataList)
+            while (summaryChunks > fragmentationLimit): #condense summary until it reaches a defined number of chunks
+                entryDataList = DataChunker(entryResultsFile, prompt, chunkSize)
+                if os.path.exists(entryResultsFile): #delete results file so it can be recreated for new summary
+                    os.remove(entryResultsFile)
+                else:
+                    print("The file does not exist")
+
+                for entryData in entryDataList: #resummarize chunked datalist
+                    Summarizer(entryData, entryResultsFile, llm, backgroundPrompt, summarizationEngine)
+                    remoteRequest = (remoteRequest,remoteQuota)
+                summaryChunks = len(entryDataList) #measure fragmentation
+
+
+    current_path = os.path.join(current_dir, entryResultsFile) #move summarized file to summarized folder
+    subfolder_path = os.path.join(current_dir, "summarizedfiles")
+    subfolder_path_destination = os.path.join(subfolder_path, entryResultsFile)
+
+    os.rename(current_path, subfolder_path_destination)
+
+    current_dir = os.getcwd()  # fetch data files
+    subfolder_path = os.path.join(current_dir, "datafiles")
+
+
+
+current_dir = os.getcwd()  # fetch data files
+
+#current_path = os.path.join(current_dir, entryResultsFile) #move summarized file to summarized folder
+subfolder_path = os.path.join(current_dir, "summarizedfiles")
+
+
+for name in os.listdir(subfolder_path): #write all entry files to a summary file
+    fileExists = os.path.isfile(summaryFile)
+    data_path = os.path.join(subfolder_path,name)
+
+    root_ext = os.path.splitext(name)
+    entryFileName = root_ext[0] + root_ext[1]
+
+    with open(data_path) as f:  # open up website/document list
+        summarizedtext = f.read()
+
+
+    entryfilepath = os.path.join(subfolder_path, name)
+
+
+    if (fileExists == False):
+
+        with open(summaryFile, "w") as file:
+            output = entryFileName + "\n" + summarizedtext + "\n"
+            file.write(output)
+
+    else:
+        with open(summaryFile, "a") as file:
+            output = entryFileName + "\n" + summarizedtext + "\n"
+            file.write(output)
 
 
 

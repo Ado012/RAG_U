@@ -1,0 +1,8 @@
+beautifulsoup4
+git+https://github.com/abetlen/llama-cpp-python@main
+nltk
+requests
+urllib3
+google-generativeai>=0.7.2
+
+
