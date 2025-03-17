@@ -393,7 +393,7 @@ def RemotePause(remoteRequest, remoteQuota): #Use LLM to summarize data from web
 
 prompt = "Summarize the following biotech company website text: "
 backgroundPrompt = "I am a website summarizer. What website text do you wish me to summarize?"
-modelpathParam = "/home/sampleuser/llamamodel/llama-3.1-8b-instruct.Q4_K.gguf"
+modelpathParam = "/home/ace/Documents/Software_Projects/llama.cpp/models/Llama3p18BQ4K/llama-3.1-8b-instruct.Q4_K.gguf"
 chatformatParam = "llama-3"
 summarizationEngine = "local"
 chunkSize = 5000
@@ -433,7 +433,7 @@ summaryFile = "summarizedWebsites.txt" #prepare output file
 
 for entry in entryList: #download list of websites
     entryParts = entry.split(".")
-    if ('com' in entryParts or 'edu' in entryParts or 'net' in entryParts or 'www' in entryParts )
+    if ('com' in entryParts or 'edu' in entryParts or 'net' in entryParts or 'www' in entryParts ):
         
         domain_values = ['com', 'net', 'edu']
 
