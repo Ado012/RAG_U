@@ -56,7 +56,7 @@ Set *modelpathParam* to the path the model is located in. <br>
 
 Set prompt to the instructions you wish to give to the model. <br>
 
-List websites to crawl in the *EntriesInput* file in the format "https://wwww.website.topleveldomain" <br>
+List websites to crawl in the *EntriesInput* file in the format "ht<span>tps://wwww.website.topleveldomain" <br>
 
 Put datafiles to summarize in the *datafiles* folder. <br>
 
