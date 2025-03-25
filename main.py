@@ -293,7 +293,7 @@ def DataChecker(data): #checks before preparing data for LLM
 
 
 
-def DataChunker(data, prompt, chunkSize): # prepares data to feed into LLM in managable chunks
+def DataChunker(data, prompt, chunkSize, llm): # prepares data to feed into LLM in managable chunks
 
     textandpromptList = []
     skipChunking = 0
@@ -306,9 +306,15 @@ def DataChunker(data, prompt, chunkSize): # prepares data to feed into LLM in ma
     #fileExists = os.path.isfile(data)  # write website output file
 
     #make sure output does not exceed prompt limit.
-    tokenizer = nltk.word_tokenize #nltk appears to be a generic tokenizer so it may not be the most accurate count to determine prompt limits depending on what model is used but is still better than nothing for now.
-    tokenizedtext = tokenizer(data)
-    tokensInOutput = len(tokenizer(data))
+    # tokenizer = nltk.word_tokenize #nltk appears to be a generic tokenizer so it may not be the most accurate count to determine prompt limits depending on what model is used but is still better than nothing for now.
+    # tokenizedtext = tokenizer(data)
+    # tokensInOutput = len(tokenizer(data))
+
+    #proper tokenization directly using the model.
+    bytedata = data.encode('utf-8')
+    tokenizedtext = llm.tokenize(bytedata)
+    tokensInOutput = len(tokenizedtext)
+
 
     #iterate through website output in chunks
     beginPart = 0
@@ -321,8 +327,18 @@ def DataChunker(data, prompt, chunkSize): # prepares data to feed into LLM in ma
             endPart = tokensInOutput
             leaveTextPartitioningLoop = 1
 
-        #summarize chunk
-        textPart = " ".join(tokenizedtext[beginPart:endPart])
+        #take a chunk of the input based on specified size and reconvert back to a string
+        tokenizedTextPartList = tokenizedtext[beginPart:endPart]
+        byteTextPartList = llm.detokenize(tokenizedTextPartList)
+        textPartList = byteTextPartList.decode('utf-8')
+        textPart = "".join(textPartList)
+
+        # print("data"+'\n')
+        # print(data + '\n')
+        # print("processeddata" + '\n')
+        # print(textPart + '\n')
+
+        #combine with prompt
         textandprompt = prompt + textPart
 
         textandpromptList.append(textandprompt)
@@ -381,7 +397,7 @@ def RemotePause(remoteRequest, remoteQuota): #Use LLM to summarize data from web
 
 prompt = "Summarize the following biotech company website text: "
 backgroundPrompt = "I am a website summarizer. What website text do you wish me to summarize?"
-modelpathParam = "/home/ace/Documents/Software_Projects/llama.cpp/models/Llama3p18BQ4K/llama-3.1-8b-instruct.Q4_K.gguf"
+modelpathParam = "/home/sampleuser/modelfile/llama-3.1-8b-instruct.Q4_K.gguf"
 chatformatParam = "llama-3"
 summarizationEngine = "local"
 chunkSize = 5000
@@ -455,7 +471,7 @@ for name in os.listdir(subfolder_path): #run summarization engine on list of out
                 output = "File not Found"
                 skipChunking = 1
 
-        entryDataList=DataChunker(rawdata, prompt, chunkSize) #chunk data into portions the system can handle
+        entryDataList=DataChunker(rawdata, prompt, chunkSize, llm) #chunk data into portions the system can handle
         entryDataList2 = []
         for entryData in entryDataList: #run summarizer on chunked datafile
             summarizedChunk = Summarizer(entryData, entryResultsFile, llm, backgroundPrompt, summarizationEngine) #run summary
@@ -466,7 +482,7 @@ for name in os.listdir(subfolder_path): #run summarization engine on list of out
             summaryChunks = len(entryDataList2)
             summaryData = ' '.join(entryDataList2)
             while summaryChunks > fragmentationLimit: #condense summary until it reaches a defined number of chunks
-                entryDataList = DataChunker(summaryData, prompt, chunkSize)
+                entryDataList = DataChunker(summaryData, prompt, chunkSize, llm)
 
                 for entryData in entryDataList: #resummarize chunked datalist
                     summarizedChunk = Summarizer(entryData, entryResultsFile, llm, backgroundPrompt, summarizationEngine)
