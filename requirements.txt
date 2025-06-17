@@ -1,9 +1,8 @@
 beautifulsoup4==4.13.3
-nltk==3.8.1
+nltk==3.9.1
 protobuf==5.29.4
 regex==2023.5.5
 Requests==2.32.3
-llama_cpp_python==0.2.90
 google==3.0.0
 google-ai-generativelanguage==0.6.10
 google-api-core==2.21.0
@@ -12,3 +11,9 @@ google-auth==2.35.0
 google-auth-httplib2==0.2.0
 google-generativeai==0.8.3
 googleapis-common-protos==1.65.0
+haystack-ai==2.12
+sentence-transformers==4.0.2
+transformers[torch,sentencepiece]
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.4-cu124/llama_cpp_python-0.3.4-cp311-cp311-linux_x86_64.whl
+llama-cpp-haystack==1.0.0
+patchright==1.52.4
