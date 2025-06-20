@@ -55,7 +55,7 @@ def ScrapeText(url, selector, scraperStance):
         context = p.chromium.launch_persistent_context(
         user_data_dir="userprofile",
         channel="chromium",
-        headless=False,
+        headless=True,
         no_viewport=True,
         # no custom headers or agents
         )
@@ -149,7 +149,7 @@ def GetLinks(url, linkdepth, linkruleset, linkthresholds, removeExternalLinks, s
                 context = p.chromium.launch_persistent_context(
                 user_data_dir="userprofile",
                 channel="chromium",
-                headless=False,
+                headless=True,
                 no_viewport=True,
                 # no custom headers or agents
             )
@@ -255,12 +255,12 @@ def WriteFile(link, cleanedtext, filenumber):
 
     if (fileExists == False):
 
-        with open(data_path, "w") as file:
+        with open(data_path, "w", encoding='utf-8') as file: #on windows writing files often defaults to cp1252 which can cause problems
 
             file.write(cleanedtext)
 
     else:
-        with open(data_path, "a") as file:
+        with open(data_path, "a", encoding='utf-8') as file:
 
             file.write(cleanedtext)
 
@@ -280,12 +280,12 @@ def WriteAnswers(summaryData, title):
 
     if (fileExists == False):
 
-        with open(summaryFile, "w") as file:
+        with open(summaryFile, "w", encoding='utf-8') as file:
             output = "<<" + title + ">>" + "\n" + summaryData + "\n"
             file.write(output)
 
     else:
-        with open(summaryFile, "a") as file: #omitted title for merged document but needs to include it for 0
+        with open(summaryFile, "a", encoding='utf-8') as file: #omitted title for merged document but needs to include it for 0
             output = "\n" + "<<" + title + ">>" + "\n" + summaryData + "\n"
             file.write(output)
 

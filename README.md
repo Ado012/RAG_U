@@ -1,4 +1,4 @@
-Retrival Augmented Generation for U, RAG-U is a simple LLM tool built on the Haystack framework that enables automated batch retrival augmented generation (RAG), information distillation, and analysis based on a user specified list of websites and/or text files through an OpenAI interface. Put simply you can 'ask' any question about a given list of websites/or files and the LLM will loop through each one and attempt to answer the question. For example a query of 'are there any jobs available?' with a list of company websites would ideally output an answer for each website.
+Retrival Augmented Generation for U, RAG-U is a simple LLM tool built on the Haystack framework that enables automated batch retrival augmented generation (RAG), information distillation, and analysis based on a user specified list of websites and/or text files through an OpenAI interface. Put simply you can 'ask' any question about a given list of websites/or files and the LLM will loop through each one and attempt to answer the question. For example a query of 'are there any jobs available?' with a list of company websites would ideally output an answer for each website. The scraper can also be used on its own by changing the parameters as desired and examining the raw datafiles. 
 
 
 WARNING: the tool is currently just an experimental casual project. Although tested and working in certain instances it may not work correctly or as expected if set up improperly or even if set up properly for other cases and expectations. Challenges remain with getting the webscraper to extract from a wide variety of websites as well as more effective use of the LLM. It is mostly designed to work on simple sites for small and midsized organizations and cannot currently process complicated structures like large job posting sites for very large corporations. Certain sites cannot be retrieved from. 
@@ -22,6 +22,7 @@ The parameters of the program can be set up differently depending on purpose.
 *thresholds* = [1,1,0] : determines how the group of keywords in ruleset are used. 1 specifices that at least 1 keyword in the group must be in the text. 0 specifies that no keyword should be in the text. <br>
 *removeExternalLinks* = 0 : removes external links <br>
 *scraperStance* = 0 : ordinary operation. 1: low profile mode. Better at retrieving web info but may take more time  <br>
+*headless* = True : Set to False for slightly better scraping efficiency with a visible browser popup. 
 
 #####  Operation
 
@@ -44,7 +45,7 @@ Download and extract directory. <br>
 
 Navigate to directory. <br>
 
-Create a 'datafiles' and 'summarizedfiles' folder in the directory. <br>
+Create a 'datafiles' and 'userprofile' folder in the directory. <br>
 
 Install virtualenv if not yet installed. <br>
 
@@ -63,14 +64,14 @@ Set the OPENAI_API_KEY environment variable in your .bashrc file adding the line
 
 NOTE: May need to set execution policy to allow script running through set-executionpolicy remotesigned as administrator <br>
 
-NOTE: May need to install Microsoft C++ Build Tools for llama-cpp integration <br>
+NOTE: May need to install Microsoft C++ Build Tools for llama-cpp integration (Desktop development with C++) <br>
 
 
 Open Powershell <br>
 
 Navigate to directory. <br>
 
-Create a 'datafiles' and 'summarizedfiles' folder in the directory. <br>
+Create a 'datafiles' and 'userprofile' folder in the directory. <br>
 
 Install python if it is not already installed. <br>
 
@@ -111,7 +112,7 @@ Results are output to *responsesSummary*. <br>
 
 
 
-**Usage (Windows)** (UNTESTED)<br> 
+**Usage (Windows)** <br> 
 
 Open Powershell <br>
 

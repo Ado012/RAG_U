@@ -14,6 +14,5 @@ googleapis-common-protos==1.65.0
 haystack-ai==2.12
 sentence-transformers==4.0.2
 transformers[torch,sentencepiece]
-https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.4-cu124/llama_cpp_python-0.3.4-cp311-cp311-linux_x86_64.whl
 llama-cpp-haystack==1.0.0
 patchright==1.52.4

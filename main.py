@@ -53,7 +53,7 @@ scraperStance = 1
 #WEBSCRAPE PART
 
 
-with open("EntriesInput.txt") as f: #open up website/document list
+with open("EntriesInput.txt", encoding='utf-8') as f: #open up website/document list
     entriestocrawl = f.read()
 
 entryList = entriestocrawl.splitlines() #split it into a readable format
@@ -233,7 +233,7 @@ else:
 
         try:
             data_path = os.path.join(subfolder_path, name)
-            with open(data_path) as f:  # exception does not seen to work. Look into this later.
+            with open(data_path , encoding='utf-8') as f:  # exception does not seen to work. Look into this later.
                 rawdata = f.read() #length check only...doesn't actually process this scraping instance
                 if os.stat(data_path).st_size == 0:  # if file is empty
                     continue
