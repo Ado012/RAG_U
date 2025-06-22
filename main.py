@@ -2,9 +2,9 @@ import bs4
 import os
 import re
 #import pandas as pd
-from llama_cpp import Llama
+#from llama_cpp import Llama
 import nltk
-nltk.download('punkt')
+#nltk.download('punkt')
 
 from webcrawl import WebsiteDownloader
 from webcrawl import WriteAnswers
@@ -27,7 +27,7 @@ from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.dataclasses import ChatMessage
 from haystack.utils import Secret
 
-from haystack_integrations.components.generators.llama_cpp import LlamaCppChatGenerator
+#from haystack_integrations.components.generators.llama_cpp import LlamaCppChatGenerator
 
 #targetList = sys.argv[0] #get website list from command line input
 
@@ -155,14 +155,14 @@ prompt_builder = ChatPromptBuilder(template=template)
 if llmoption == 1: #remote OPENAI generator
     chat_generator = OpenAIChatGenerator(api_key=Secret.from_env_var("OPENAI_API_KEY"), model="gpt-4o-mini")
 
-else: #or local generator
-    chat_generator = LlamaCppChatGenerator(
-        model="/home/samplemodel.gguf",
-        n_ctx=15000,
-        n_batch=128,
-        model_kwargs={"n_gpu_layers": -1},
-        generation_kwargs={"max_tokens": 128, "temperature": 0.1},
-    )
+# else: #or local generator
+#     chat_generator = LlamaCppChatGenerator(
+#         model="/home/samplemodel.gguf",
+#         n_ctx=15000,
+#         n_batch=128,
+#         model_kwargs={"n_gpu_layers": -1},
+#         generation_kwargs={"max_tokens": 128, "temperature": 0.1},
+#     )
 
 
 

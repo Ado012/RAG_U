@@ -39,6 +39,10 @@ The previous version of this tool utilized llama-cpp or alternatively Gemini to 
 
 #### Installation 
 
+
+NOTE: Requires Sentence Transformers which can take up a fair amount of space. Be sure to have at least 7GB of free space if installing through venv. 
+
+
 **Installation (Linux)** <br>
 
 Download and extract directory. <br>
@@ -142,7 +146,7 @@ Run with default configuration with the sample EntriesInput file. NOTE: A couple
 
 **Search UCSD Recruit for nonprofessorial listings for bioinformatics, molecular biology, and computational science related jobs posted on or after March 2025 as of May 2025**
 
-Put https://apol-recruit.ucsd.edu/apply as the sole address in EntriesInput. <br>
+Put ``https://apol-recruit.ucsd.edu/apply`` as the sole address in EntriesInput. <br>
 Change the default configuration in the following manner:  <br>
 *question*= 'List the nonprofessorial job postings that are bioinformatics, molecular biology, and computational science related'<br>
 *mergeddocuments*: = 1 <br>
